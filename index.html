@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Математические пазлы</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Палитра под игровой стиль картинки */
+      --tile-bg: #ef5350; /* Ярко-красный (машинки, лава) */
+      --tile-bg-alt: #fdd835; /* Яркий желтый (монеты, знаки) */
+      --primary-text: #212121; /* Почти черный для отличной читаемости */
+      --accent: #ff9800; /* Оранжевый */
+      --success: #4caf50; /* Сочный зеленый */
+      --error: #e53935; /* Ярко-красный для ошибок */
+      --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.35);
+      --font-main: "Roboto Condensed", system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: var(--font-main);
+      background: #e1f5fe;
+      color: var(--primary-text);
+    }
+    body { display: flex; align-items: stretch; justify-content: center; }
+    .app-root {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* --- СТАРТОВЫЙ ЭКРАН С РАЗМЫТЫМ ФОНОМ --- */
+    .start-screen {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      overflow: hidden;
+    }
+    .start-screen::before {
+      content: "";
+      position: absolute;
+      top: -20px; left: -20px; right: -20px; bottom: -20px; 
+      background: url("images/puzzlepicture.png") center/cover no-repeat fixed;
+      filter: blur(20px);
+      z-index: 0;
+    }
+    .start-overlay {
+      position: relative;
+      z-index: 1;
+      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 28px;
+      padding: 40px 30px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+      max-width: 500px;
+      width: 100%;
+      border: 4px solid var(--tile-bg-alt);
+    }
+
+    .start-title {
+      font-size: 34px;
+      line-height: 1.2;
+      font-weight: 700;
+      color: var(--primary-text);
+      margin-bottom: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .start-subtitle {
+      font-size: 20px;
+      color: #424242;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+    .start-highlight {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 16px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      background: var(--success);
+      font-weight: bold;
+    }
+    .start-button {
+      width: 100%;
+      max-width: 280px;
+      font-size: 22px;
+      padding: 14px 20px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fdd835, #ffb300);
+      color: var(--primary-text);
+      box-shadow: 0 8px 24px rgba(253, 216, 53, 0.5);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .start-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(253, 216, 53, 0.6);
+    }
+    .start-button:active { transform: translateY(1px); }
+
+    /* --- ИГРОВОЙ ЭКРАН --- */
+    .game-screen {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(to bottom right, #ffcdd2, #fff59d);
+      padding: 16px;
+    }
+    .game-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 95vw;
+      min-height: 90vh;
+      height: 95vh;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      border: 4px solid #fff;
+    }
+    .top-bar {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px 8px;
+    }
+    .progress {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border: 2px solid #ffcdd2;
+    }
+    .progress-check {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--success);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: #fff;
+    }
+    .progress-text {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--primary-text);
+    }
+    .sound-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: none;
+      background: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.1s ease;
+    }
+    .sound-toggle:active { transform: scale(0.92); }
+    .sound-icon { font-size: 24px; }
+    
+    .game-field {
+      position: relative;
+      flex: 1;
+      padding: 10px 24px 24px;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+    .image-area {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #cfd8dc;
+      flex: 1;
+      display: flex;
+      border: 3px solid #fff;
+    }
+    .puzzle-image-wrapper {
+      position: relative;
+      flex: 1;
+      background: url("images/puzzlepicture.png") center/cover no-repeat; 
+    }
+    .tiles-grid {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr); 
+      grid-template-rows: repeat(3, 1fr);    
+      gap: 0;
+    }
+    
+    /* Плитки пазла */
+    .puzzle-tile {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      cursor: pointer;
+      perspective: 1000px;
+      background: var(--tile-bg);
+      color: #fff; /* Белый текст на красном фоне смотрится лучше */
+      transition: transform 0.2s ease, opacity 0.3s ease;
+    }
+    .puzzle-tile:nth-child(even) { 
+      background: var(--tile-bg-alt); 
+      color: var(--primary-text); /* Темный текст на желтом фоне */
+    }
+    .puzzle-tile-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      text-transform: uppercase;
+      box-shadow: inset 0 0 20px rgba(255,255,255,0.4), 0 4px 10px rgba(0,0,0,0.1);
+      padding: 10px;
+    }
+    
+    /* Скругления для крайних плиток */
+    .puzzle-tile[data-index="0"]  .puzzle-tile-inner { border-radius: 20px 0 0 0; }
+    .puzzle-tile[data-index="4"]  .puzzle-tile-inner { border-radius: 0 20px 0 0; }
+    .puzzle-tile[data-index="10"] .puzzle-tile-inner { border-radius: 0 0 0 20px; }
+    .puzzle-tile[data-index="14"] .puzzle-tile-inner { border-radius: 0 0 20px 0; }
+    
+    /* Ушки и выемки пазла */
+    .puzzle-tile-inner::before, .puzzle-tile-inner::after { content: ""; position: absolute; border-radius: 50%; z-index: 2; }
+    .puzzle-tile[data-top="tab"] .puzzle-tile-inner::before, .puzzle-tile[data-top="blank"] .puzzle-tile-inner::before {
+      width: 36px; height: 36px; top: -18px; left: 50%; transform: translateX(-50%);
+    }
+    .puzzle-tile[data-top="tab"] .puzzle-tile-inner::before { background: inherit; box-shadow: 0 -3px 6px rgba(0,0,0,0.15); }
+    .puzzle-tile[data-top="blank"] .puzzle-tile-inner::before { background: rgba(0,0,0,0.15); box-shadow: inset 0 3px 6px rgba(0,0,0,0.2); }
+    .puzzle-tile[data-bottom="tab"] .puzzle-tile-inner::after, .puzzle-tile[data-bottom="blank"] .puzzle-tile-inner::after {
+      width: 36px; height: 36px; bottom: -18px; left: 50%; transform: translateX(-50%);
+    }
+    .puzzle-tile[data-bottom="tab"] .puzzle-tile-inner::after { background: inherit; box-shadow: 0 3px 6px rgba(0,0,0,0.15); }
+    .puzzle-tile[data-bottom="blank"] .puzzle-tile-inner::after { background: rgba(0,0,0,0.15); box-shadow: inset 0 -3px 6px rgba(0,0,0,0.2); }
+    
+    .puzzle-tile::before, .puzzle-tile::after { content: ""; position: absolute; border-radius: 50%; z-index: 2; }
+    .puzzle-tile[data-left="tab"]::before, .puzzle-tile[data-left="blank"]::before {
+      width: 36px; height: 36px; left: -18px; top: 50%; transform: translateY(-50%);
+    }
+    .puzzle-tile[data-left="tab"]::before { background: inherit; box-shadow: -3px 0 6px rgba(0,0,0,0.15); }
+    .puzzle-tile[data-left="blank"]::before { background: rgba(0,0,0,0.15); box-shadow: inset -3px 0 6px rgba(0,0,0,0.2); }
+    .puzzle-tile[data-right="tab"]::after, .puzzle-tile[data-right="blank"]::after {
+      width: 36px; height: 36px; right: -18px; top: 50%; transform: translateY(-50%);
+    }
+    .puzzle-tile[data-right="tab"]::after { background: inherit; box-shadow: 3px 0 6px rgba(0,0,0,0.15); }
+    .puzzle-tile[data-right="blank"]::after { background: rgba(0,0,0,0.15); box-shadow: inset 3px 0 6px rgba(0,0,0,0.2); }
+    .puzzle-tile[data-top="none"] .puzzle-tile-inner::before, .puzzle-tile[data-bottom="none"] .puzzle-tile-inner::after,
+    .puzzle-tile[data-left="none"]::before, .puzzle-tile[data-right="none"]::after { display: none; }
+    
+    .puzzle-tile:hover {
+      transform: translateY(-3px) scale(1.01);
+      z-index: 10;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    }
+    .puzzle-tile.disabled {
+      cursor: default; pointer-events: none; opacity: 0;
+      transform: scale(0.9);
+    }
+    .puzzle-tile.flipping { animation: tileFlip 0.4s ease forwards; }
+    @keyframes tileFlip {
+      0%   { transform: rotateY(0deg) scale(1); }
+      50%  { transform: rotateY(90deg) scale(1.1); }
+      100% { transform: rotateY(90deg) scale(1); opacity: 0; }
+    }
+
+    /* --- МАЛЕНЬКИЕ ОКНА (ОШИБКА, ФИЗМИНУТКА) --- */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(5px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 150; padding: 16px;
+    }
+    .overlay.visible { display: flex; }
+    
+    .overlay-card {
+      background: #fff;
+      border-radius: 28px;
+      padding: 30px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      border: 4px solid var(--tile-bg);
+    }
+    .overlay-title {
+      font-size: 32px; margin-bottom: 12px; color: var(--primary-text);
+      text-transform: uppercase; font-weight: bold;
+    }
+    .overlay-text { font-size: 22px; color: #424242; margin-bottom: 24px; }
+    .overlay-button {
+      font-size: 20px; padding: 12px 28px; border-radius: 999px;
+      border: none; cursor: pointer; font-weight: bold; text-transform: uppercase;
+      background: var(--success); color: #fff;
+      box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4); transition: transform 0.15s;
+    }
+    .overlay-button:hover { transform: translateY(-2px); }
+    .overlay-button:active { transform: translateY(1px); }
+
+    /* --- БОЛЬШОЕ ОКНО РЕШЕНИЯ (ZOOM) --- */
+    .zoom-overlay {
+      position: fixed; inset: 0;
+      background: rgba(33, 33, 33, 0.7);
+      backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 100; padding: 16px;
+    }
+    .zoom-overlay.visible { display: flex; }
+    .zoom-card {
+      background: #fff; border-radius: 28px; padding: 40px;
+      max-width: 850px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 4px solid var(--tile-bg-alt);
+      display: flex; flex-direction: column;
+    }
+    .zoom-question {
+      font-size: 34px; color: var(--primary-text); margin-bottom: 30px;
+      font-weight: bold; text-align: center;
+    }
+    
+    /* Стили для примеров */
+    .math-grid {
+      display: flex; justify-content: space-around; align-items: center;
+      flex-wrap: wrap; gap: 30px; margin-bottom: 50px;
+    }
+    .math-item {
+      display: flex; align-items: center; gap: 15px;
+      font-size: 36px; font-weight: bold; color: var(--primary-text);
+    }
+    
+    /* Стили для текстовых задач */
+    .problem-layout {
+      display: flex; flex-direction: column; gap: 25px; margin-bottom: 20px;
+    }
+    .zoom-textarea {
+      width: 100%; height: 160px; font-size: 26px; padding: 20px;
+      border-radius: 20px; border: 2px solid #ffcdd2; background: #ffffff;
+      color: var(--primary-text); outline: none; resize: none; font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .zoom-textarea:focus { border-color: var(--tile-bg); box-shadow: 0 0 0 3px rgba(239, 83, 80, 0.2); }
+    .answer-row {
+      display: flex; justify-content: flex-end; align-items: center;
+      gap: 15px; font-size: 34px; font-weight: bold; color: var(--primary-text);
+    }
+
+    /* Квадратики для ответов и выпадающий список */
+    .square-input {
+      width: 70px; height: 70px; font-size: 34px; text-align: center;
+      border: 3px solid #ffcdd2; border-radius: 14px; background: #ffffff;
+      color: var(--primary-text); font-weight: bold; outline: none;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+    .square-input:focus { border-color: var(--tile-bg); box-shadow: 0 0 0 3px rgba(239, 83, 80, 0.2); }
+    
+    /* Выпадающий список для знаков сравнения */
+    select.square-input {
+      cursor: pointer; appearance: none; -webkit-appearance: none; text-align-last: center;
+      background-image: url("data:image/svg+xml;utf8,<svg fill='%23212121' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+      background-repeat: no-repeat; background-position: right 4px center;
+      background-size: 24px; padding-right: 14px; width: 80px; 
+    }
+
+    /* Цвета при проверке */
+    .square-input.correct { border-color: var(--success); background-color: #e8f5e9; }
+    .square-input.error { border-color: var(--error); background-color: #ffebee; }
+
+    .zoom-button {
+      display: block; width: 100%; font-size: 26px; padding: 16px;
+      border-radius: 999px; border: none; cursor: pointer; font-weight: bold;
+      text-transform: uppercase; background: linear-gradient(135deg, #4caf50, #43a047);
+      color: #fff; box-shadow: 0 8px 24px rgba(76, 175, 80, 0.4); transition: transform 0.15s;
+    }
+    .zoom-button:hover { transform: translateY(-2px); }
+    .zoom-button:active { transform: translateY(1px); }
+
+    /* --- ФИНАЛЬНЫЙ ЭКРАН С САЛЮТОМ --- */
+    .final-content {
+      position: relative; z-index: 2; max-width: 500px; width: 100%;
+      padding: 40px 30px; border-radius: 28px; text-align: center;
+      background: #fff; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      border: 4px solid var(--tile-bg-alt);
+    }
+    .final-title { font-size: 40px; color: var(--primary-text); text-transform: uppercase; font-weight: bold; margin-bottom: 12px; }
+    .final-subtitle { font-size: 24px; color: #424242; margin-bottom: 30px; }
+    .firework { position: absolute; border-radius: 50%; pointer-events: none; }
+    @keyframes explode {
+      0% { transform: scale(0.1); opacity: 1; }
+      70% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.2); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    
+    <section class="start-screen" id="startScreen">
+      <div class="start-overlay">
+        <div class="start-highlight">Геймерская математика</div>
+        <h1 class="start-title">Открой все кусочки пазла</h1>
+        <p class="start-subtitle">Выполни вычисления и открой картинку!</p>
+        <button class="start-button" id="startButton">Начать</button>
+      </div>
+    </section>
+
+    <section class="game-screen" id="gameScreen">
+      <div class="game-wrapper">
+        <div class="top-bar">
+          <div class="progress">
+            <div class="progress-check">✓</div>
+            <div class="progress-text" id="progressText">0 / 15</div>
+          </div>
+          <button class="sound-toggle" id="soundToggle" aria-label="Звук">
+            <span class="sound-icon" id="soundIcon">🔊</span>
+          </button>
+        </div>
+        <div class="game-field">
+          <div class="image-area">
+            <div class="puzzle-image-wrapper">
+              <div class="tiles-grid" id="tilesGrid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="zoom-overlay" id="zoomOverlay">
+      <div class="zoom-card">
+        <div id="zoomContent"></div>
+        <button class="zoom-button" id="zoomSubmit">Готово</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="errorOverlay">
+      <div class="overlay-card" style="border-color: #e53935;">
+        <div class="overlay-title" style="color: #e53935;">Неверно!</div>
+        <div class="overlay-text">Попробуй ещё раз, исправь ошибку.</div>
+        <button class="overlay-button" id="errorCloseBtn" style="background: #e53935; box-shadow: 0 8px 20px rgba(229, 57, 53, 0.4);">Вернуться</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="breakOverlay">
+      <div class="overlay-card">
+        <div class="overlay-title">Отдых!</div>
+        <div class="overlay-text">Сделай разминку 🤸‍♀️</div>
+        <button class="overlay-button" id="breakContinueButton">Продолжить</button>
+      </div>
+    </div>
+
+    <div class="overlay final-overlay" id="finalOverlay">
+      <div class="final-content">
+        <div class="final-title">Отлично!</div>
+        <div class="final-subtitle">Ты открыл всю картинку!</div>
+        <button class="overlay-button" id="playAgainButton" style="width:100%; margin-bottom:12px;">Играть ещё раз</button>
+        <button class="overlay-button" id="freeModeButton" style="width:100%; background: #ffebee; color: #212121; box-shadow:none;">Посмотреть картинку</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Массив новых заданий (Сложение и вычитание с переходом через десяток)
+    const originalPuzzles = [
+      { type: "math", items: [{b: "8 + 6 =", a: "14"}, {b: "15 - 7 =", a: "8"}] },
+      { type: "math", items: [{b: "12 - 5 =", a: "7"}, {b: "9 + 4 =", a: "13"}] },
+      { type: "math", items: [{b: "14 - 6 =", a: "8"}, {b: "7 + 5 =", a: "12"}] },
+      { type: "math", items: [{b: "11 - 3 =", a: "8"}, {b: "6 + 8 =", a: "14"}] },
+      { type: "math", items: [{b: "13 - 4 =", a: "9"}, {b: "5 + 7 =", a: "12"}] },
+      { type: "math", title: "Сравни (>, <, =):", items: [{b: "12 - 4", a: ">", after: "7"}, {b: "8 + 5", a: "<", after: "14"}] },
+      { type: "math", title: "Сравни (>, <, =):", items: [{b: "15 - 6", a: "=", after: "9"}] },
+      { type: "math", title: "Сравни (>, <, =):", items: [{b: "15 - 8", a: "<", after: "14 - 5"}] },
+      { type: "problem", text: "У Нуба было 12 монет. Он потратил 5 монет на крутой меч. Сколько монет у него осталось?", answer: "7" },
+      { type: "problem", text: "В гонке участвовало 8 синих машин и 6 красных. Сколько всего машин вышло на трассу?", answer: "14" },
+      { type: "problem", text: "На стройке было 15 блоков. Строитель уже использовал 8 блоков. Сколько блоков ещё осталось?", answer: "7" },
+      { type: "problem", text: "В парке веселилось 7 детей на горках, а на каруселях — ещё 6. Сколько всего детей играет в парке?", answer: "13" },
+      { type: "problem", text: "Игрок набрал 14 очков. Из-за падения в лаву он потерял 6 очков. Сколько очков у него сейчас?", answer: "8" },
+      { type: "problem", text: "Для постройки дома нужно 11 досок. У мастера пока есть только 4. Сколько досок ему ещё нужно?", answer: "7" },
+      { type: "math", items: [{b: "Увеличь 8 на 7.", a: "15"}, {b: "Уменьши 16 на 9.", a: "7"}] }
+    ];
+    
+    let puzzles = [];
+    const TOTAL_TILES = 15;
+
+    // Схема соединения кусочков пазла
+    const puzzleEdges = [
+      { top:"none",  bottom:"tab",   left:"none",  right:"tab" },
+      { top:"none",  bottom:"blank", left:"blank", right:"tab" },
+      { top:"none",  bottom:"tab",   left:"blank", right:"blank" },
+      { top:"none",  bottom:"blank", left:"tab",   right:"tab" },
+      { top:"none",  bottom:"tab",   left:"blank", right:"none" },
+      { top:"blank", bottom:"tab",   left:"none",  right:"tab" },
+      { top:"tab",   bottom:"blank", left:"blank", right:"tab" },
+      { top:"blank", bottom:"tab",   left:"blank", right:"blank" },
+      { top:"tab",   bottom:"blank", left:"tab",   right:"tab" },
+      { top:"blank", bottom:"tab",   left:"blank", right:"none" },
+      { top:"blank", bottom:"none",  left:"none",  right:"tab" },
+      { top:"tab",   bottom:"none",  left:"blank", right:"tab" },
+      { top:"blank", bottom:"none",  left:"blank", right:"blank" },
+      { top:"tab",   bottom:"none",  left:"tab",   right:"tab" },
+      { top:"blank", bottom:"none",  left:"blank", right:"none" }
+    ];
+
+    const startScreen = document.getElementById("startScreen");
+    const gameScreen  = document.getElementById("gameScreen");
+    const startButton = document.getElementById("startButton");
+    const tilesGrid   = document.getElementById("tilesGrid");
+    const progressTextEl = document.getElementById("progressText");
+    
+    const zoomOverlay   = document.getElementById("zoomOverlay");
+    const zoomContentEl = document.getElementById("zoomContent");
+    const zoomSubmitBtn = document.getElementById("zoomSubmit");
+    
+    const errorOverlay  = document.getElementById("errorOverlay");
+    const errorCloseBtn = document.getElementById("errorCloseBtn");
+
+    const breakOverlay         = document.getElementById("breakOverlay");
+    const breakContinueButton  = document.getElementById("breakContinueButton");
+
+    const finalOverlay    = document.getElementById("finalOverlay");
+    const playAgainButton = document.getElementById("playAgainButton");
+    const freeModeButton  = document.getElementById("freeModeButton");
+    
+    const soundToggleBtn = document.getElementById("soundToggle");
+    const soundIconEl    = document.getElementById("soundIcon");
+    
+    let soundEnabled = true;
+    const flipSound  = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+    const winSound   = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+    const errorSound = new Audio("https://actions.google.com/sounds/v1/cartoon/goofy_spring_bounces.ogg");
+    flipSound.volume = 0.3; winSound.volume = 0.3; errorSound.volume = 0.4;
+    
+    function playSound(audio) {
+      if (!soundEnabled || !audio) return;
+      try { audio.currentTime = 0; audio.play(); } catch (e) {}
+    }
+
+    function playErrorSoundLimited() {
+      if (!soundEnabled) return;
+      try {
+        errorSound.currentTime = 0;
+        errorSound.play();
+        setTimeout(() => { try { errorSound.pause(); } catch(e){} }, 2000);
+      } catch(e) {}
+    }
+    
+    let openedTiles = 0;
+    let zoomTileIndex = null;
+    let breakShown = false;
+    
+    function updateProgress() {
+      progressTextEl.textContent = `${openedTiles} / ${TOTAL_TILES}`;
+    }
+
+    // Перемешивание заданий
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    
+    // Создание пазлов
+    function createTiles() {
+      tilesGrid.innerHTML = "";
+      puzzles.forEach((puzzle, index) => {
+        const edges = puzzleEdges[index];
+        const tile = document.createElement("div");
+        tile.className = "puzzle-tile";
+        tile.dataset.index  = index;
+        
+        tile.dataset.top    = edges.top;
+        tile.dataset.bottom = edges.bottom;
+        tile.dataset.left   = edges.left;
+        tile.dataset.right  = edges.right;
+        
+        const inner = document.createElement("div");
+        inner.className = "puzzle-tile-inner";
+        inner.innerHTML = `<span>Открой<br>меня!</span>`;
+        inner.style.backgroundColor = "inherit";
+
+        tile.appendChild(inner);
+        tilesGrid.appendChild(tile);
+        
+        tile.addEventListener("click", () => {
+          if (!tile.classList.contains("disabled")) {
+            openZoom(index);
+          }
+        });
+      });
+    }
+    
+    // Открытие окна с заданием
+    function openZoom(index) {
+      zoomTileIndex = index;
+      const puzzle = puzzles[index];
+      zoomContentEl.innerHTML = "";
+      
+      let html = "";
+      if (puzzle.type === "math") {
+        if (puzzle.title) html += `<div class="zoom-question">${puzzle.title}</div>`;
+        html += `<div class="math-grid">`;
+        
+        puzzle.items.forEach(item => {
+          const isCompare = [">", "<", "="].includes(item.a);
+          html += `<div class="math-item"><span>${item.b}</span>`;
+          
+          // Выпадающий список для знаков сравнения
+          if (isCompare) {
+            html += `
+              <select class="square-input answer-input" data-answer="${item.a}">
+                <option value="" selected disabled></option>
+                <option value=">">&gt;</option>
+                <option value="<">&lt;</option>
+                <option value="=">=</option>
+              </select>`;
+          } else {
+            html += `<input type="text" class="square-input answer-input" data-answer="${item.a}" autocomplete="off" maxlength="3" />`;
+          }
+          
+          if (item.after) {
+             html += `<span>${item.after}</span>`;
+          }
+          html += `</div>`;
+        });
+        html += `</div>`;
+      } else if (puzzle.type === "problem") {
+        html += `<div class="zoom-question" style="text-align: left; margin-bottom: 20px;">${puzzle.text}</div>`;
+        html += `
+          <div class="problem-layout">
+            <textarea class="zoom-textarea" placeholder="Место для вычислений..."></textarea>
+            <div class="answer-row">
+              <span>Ответ:</span>
+              <input type="text" class="square-input answer-input" data-answer="${puzzle.answer}" autocomplete="off" maxlength="3" />
+            </div>
+          </div>`;
+      }
+      
+      zoomContentEl.innerHTML = html;
+      zoomOverlay.classList.add("visible");
+      
+      setTimeout(() => {
+        const firstInput = zoomContentEl.querySelector(".answer-input");
+        const textarea = zoomContentEl.querySelector(".zoom-textarea");
+        if (puzzle.type === "math" && firstInput) firstInput.focus();
+        else if (textarea) textarea.focus();
+      }, 50);
+    }
+    
+    function closeZoom() {
+      zoomOverlay.classList.remove("visible");
+      zoomTileIndex = null;
+    }
+    
+    // Анимация салюта
+    function showFinalScreen() {
+      finalOverlay.classList.add("visible");
+      spawnFireworks();
+      playSound(winSound);
+    }
+    
+    function spawnFireworks() {
+      const colors = ["#ef5350", "#fdd835", "#f44336", "#4caf50"]; 
+      for (let i = 0; i < 20; i++) {
+        const fw = document.createElement("div");
+        fw.className = "firework";
+        const size = 50 + Math.random() * 80;
+        fw.style.width = size + "px"; fw.style.height = size + "px";
+        fw.style.background = `radial-gradient(circle, ${colors[Math.floor(Math.random() * colors.length)]} 0%, rgba(255,255,255,0) 60%)`;
+        fw.style.left = Math.random() * 90 + "%";
+        fw.style.top = Math.random() * 80 + "%";
+        const duration = 800 + Math.random() * 800;
+        fw.style.animation = `explode ${duration}ms ease-out forwards`;
+        finalOverlay.appendChild(fw);
+        setTimeout(() => finalOverlay.removeChild(fw), duration);
+      }
+    }
+    
+    // Запуск игры
+    function startGame() {
+      startScreen.style.display = "none";
+      gameScreen.style.display  = "flex";
+      finalOverlay.classList.remove("visible");
+      
+      puzzles = shuffleArray(originalPuzzles);
+      openedTiles = 0;
+      breakShown = false;
+      updateProgress();
+      createTiles();
+    }
+    
+    startButton.addEventListener("click", startGame);
+    playAgainButton.addEventListener("click", startGame);
+    
+    // Логика проверки ответа (Кнопка Готово)
+    zoomSubmitBtn.addEventListener("click", () => {
+      if (zoomTileIndex === null) return;
+      const tile = tilesGrid.querySelector(`.puzzle-tile[data-index="${zoomTileIndex}"]`);
+      if (!tile) return;
+      
+      const inputs = zoomContentEl.querySelectorAll(".answer-input");
+      let allCorrect = true;
+      let hasEmpty = false;
+      
+      inputs.forEach(input => {
+        const expected = input.dataset.answer.toLowerCase();
+        const userVal = input.value.trim().toLowerCase();
+        
+        if (!userVal) hasEmpty = true;
+        
+        if (userVal === expected) {
+          input.classList.remove("error");
+          input.classList.add("correct");
+        } else {
+          input.classList.remove("correct");
+          input.classList.add("error");
+          allCorrect = false;
+        }
+      });
+      
+      if (allCorrect && !hasEmpty) {
+        playSound(flipSound);
+        // Задержка чтобы ребенок увидел зеленую подсветку
+        setTimeout(() => {
+          closeZoom();
+          tile.classList.add("flipping");
+          
+          setTimeout(() => {
+            tile.classList.add("disabled");
+            openedTiles++;
+            updateProgress();
+            
+            // Физкультминутка после 7-й открытой карточки
+            if (openedTiles === 7 && !breakShown) {
+              breakShown = true;
+              setTimeout(() => breakOverlay.classList.add("visible"), 300);
+            }
+            
+            // Конец игры
+            if (openedTiles >= TOTAL_TILES) {
+              setTimeout(showFinalScreen, 600);
+            }
+          }, 380);
+        }, 400); 
+      } else {
+        // Если ошибка
+        playErrorSoundLimited();
+        errorOverlay.classList.add("visible");
+      }
+    });
+    
+    errorCloseBtn.addEventListener("click", () => {
+      errorOverlay.classList.remove("visible");
+    });
+    
+    breakContinueButton.addEventListener("click", () => {
+      breakOverlay.classList.remove("visible");
+    });
+    
+    freeModeButton.addEventListener("click", () => {
+      finalOverlay.classList.remove("visible");
+    });
+    
+    soundToggleBtn.addEventListener("click", () => {
+      soundEnabled = !soundEnabled;
+      soundIconEl.textContent = soundEnabled ? "🔊" : "🔈";
+    });
+  </script>
+</body>
+</html>
